@@ -75,5 +75,5 @@ Now Plannning .
 
 ## アイテム
 
-### [企業 プライベートIaaS 標準編:RHOSP13 + ceph3.0 ](EntPrivateCloudGeneral-0/EntPrivateCloudGeneral-0.md)
+### [HCI編:RHOSP13 + ceph3.0 ](HCI-0/EntPrivateCloudGeneral-0.md)
 ### 企業 プライベートIaaS HCI編:RHOSP13 + ceph3.0 (計画中)
