@@ -75,4 +75,4 @@ Now Plannning .
 
 ## アイテム
 
-### [HCI編:RHOSP13 + ceph3.0 ](HCI-0/EntPrivateCloudGeneral-0.md)
+### [HCI編:RHOSP13 + ceph3.0 ](HCI-0/HCI-0.md)
