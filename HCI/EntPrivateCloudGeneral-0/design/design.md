@@ -128,52 +128,81 @@ OpenStack 環境には、役割／用途に応じて、物理サーバを用意�
 #### 想定サイジング
 利用者の規模については、下記を想定しています。
 
+##### ゲストVM
 * 平均的なゲストVMのサイズ
-  * CPU : 2 core
-  * RAM : 4 GB
-  * HDD : 40GB ( system )
-  * HDD : 100GB ( data )
-* ゲストVM数 : 500VM
-  * 1システム（アプリケーション）の平均的なサーバ台数を5台として、100システム程度の規模間
+  * CPU : 1 core
+  * メモリ : 2 GB
+  * ストレージ ( system ) : 40GiB
+  * ストレージ ( data ) : 20GiB
+* ゲストVM数 : 100VM
+* ゲストVMの平均CPU使用率 : 20%
 
-尚、同時にビジーなゲストVMの数は、15％程度と想定しています。computeノードのサイジングに於ては、オーバーコミットについて、下記、を設定しています。
+##### Ceph
+* データ冗長化方式 : 3x replication
+* 1 osd に割り当てるCPUとメモリ
+  * CPU : 2 cores
+  * メモリ : 3 GB
 
-* CPU overcommit ratio : x 16.0 ( 2 core x 500VM = 1000 core , 1000 core / 16.0 = 62.5 物理コアが必要）
-* Memory overcommit ratio : x 1.0 ( 4GB x 500VM = 2TB , 2TB / 1.0 = 2TB 物理メモリが必要 )
+### システム構成情報 (本番環境 : 100VM)
+#### Red Hat OpenStack& Ceph Storage
 
-*** 注意 *** 今回使用している、オーバーコミットレシオは、製品標準の値となります。利用者へのCPU時間の割当をより、シビアに想定する場合は、より小さなパラメータを想定してください。
+| サーバ役割 | 台数 | x86_64 CPU コア数 | メモリ搭載量(GB) | システムHDD (GiB) | 追加HDD (GiB) | 1G NIC (ポート数) | 10G NIC(ポート数) | 備考 |
+|:--------:|:----:|:-----------------:|:----------------:|:----------------:|:------------:|:-----------------:|:-----------------:|:-----------------|
+| 仮想ホスト | 1 | 8 | 128 | SAS/SATA SSD <br> 120 GiB x 2 | SAS/SATA HDD <br> 1 TiB x 2 | 5 | 0 | Director は、KVMゲストVMとして構築 . <br> 余剰なリソースは、監視サーバ等で利用可能 |
+| Controller <br> Ceph MON/MGR| 3 | 8 | 128 | SAS/SATA SSD <br> 120 GiB x 2 | N/A | 6 | 6 |  |
+| Compute <br> Ceph OSD| 3 | 36 | 192 | SAS/SATA SSD <br>  120 GiB x 2 | \* journal : NVMe SSD 800 GiB x 1 <br> \* data : SAS/SATA SSD 1.92 TiB x 8| 4 | 8 | より大規模な環境とする場合、CPUコア数、メモリ搭載量を増加させる。<br>  \* cinder-volume 6,000 GiB <br> \* cinder-backup 6,000 GiB <br> \* glance-image 1,000 GiB <br> \* gnocchi-metrics 1,000 GiB <br> TOTAL:14,000 GiB |
 
-### システム構成情報（本番環境)
+### システム構成情報（検証環境 : 10-20VM程度の規模を想定)
+#### Red Hat OpenStack& Ceph Storage
 
-#### Red Hat OpenStack
+| サーバ役割 | 台数 | x86_64 CPU コア数 | メモリ搭載量(GB) | システムHDD | 追加HDD | 1G NIC (ポート数) | 10G NIC(ポート数) | 備考 |
+|:--------:|:----:|:-----------------:|:----------------:|:----------------:|:------------:|:-----------------:|:-----------------:|:-----------------|
+| 仮想ホスト | 1 | 8 | 128 | SAS/SATA SSD <br> 120 GiB x 2 | SAS/SATA HDD <br> 1 TiB x 2 | 5 | 0 | Director は、KVMゲストVMとして構築 . <br> 余剰なリソースは、監視サーバ等で利用可能 |
+| Controller <br> Ceph MON/MGR| 3 | 4 | 32 | SAS/SATA SSD <br> 120 GiB x 2 | N/A | 6 | 6 |  |
+| Compute <br> Ceph OSD| 3 | 24 | 768 | SAS/SATA SSD <br>  120 GiB x 2 | \* journal : SAS/SATA SSD 240 GiB x 1 <br> \* data : SAS/SATA SSD 960 GiB x 3| 4 | 8 | より大規模な環境とする場合、CPUコア数、メモリ搭載量を増加させる。<br>  \* cinder-volume 1,000 GiB <br> \* cinder-backup 1,000 GiB <br> \* glance-image 150 GiB <br> \* gnocchi-metrics 150 GiB <br> TOTAL:2,300 GiB |
 
-| サーバ役割 | 台数 | x86_64 CPU コア数 | メモリ搭載量(GB) | システムHDD (GB) | 追加HDD (GB) | 1G NIC (ポート数) | 10G NIC(ポート数) | 備考 |
-|:----------:|:----:|:-----------------:|:----------------:|:----------------:|:------------:|:-----------------:|:-----------------:|:-----------------|
-| 仮想ホスト | 1 | 8 | 128 | SAS HDD <br> 600 x 2 | SAS/SATA HDD <br> 1024 x 2 | 5 | 0 | Director は、KVMゲストVMとして構築 . <br> 余剰なリソースは、監視サーバ等で利用可能 |
-| Controller | 3 | 8 | 128 | SAS HDD <br> 600 x 2 | N/A | 6 | 6 |  |
-| Compute | 3 | 24 | 768 | SAS HDD <br>  600 x 2 | N/A | 4 | 6 | より大規模な環境とする場合、CPUコア数、メモリ搭載量を増加させる。  |
 
-#### Red Hat ceph storage
+#### 本番環境におけるCeph Storageのストレージ容量の見積もり
+サイジング想定にしたがい、1 ゲストVMは 60GiB 利用するため、100ゲストVMでは合計 6,000 GiB 必要となります。  
+本構成では 3 Compute ノードでデータを三重ミラーして冗長化する、3x replication 構成を想定します。そのため、各 Compute ノードで 6,000 GiB 用意することが求められます。  
+また、ゲストVMのバックアップ (cinder-backup) 用に同じく 6,000GiB 用意します。  
+さらに、ゲストVMのイメージ (glance) と、OpenStack のメトリクス (gnocchi) 用にそれぞれ 1,000 GiB 用意します。  
 
-| サーバ役割 | 台数 | x86_64 CPU コア数 | メモリ搭載量(GB) | システムHDD (GB) | 追加HDD (GB) | 1G NIC (ポート数) | 10G NIC(ポート数) | 備考 |
-|:----------:|:----:|:-----------------:|:----------------:|:----------------:|:------------:|:-----------------:|:-----------------:|:-----------------|
-| ceph-Storage | 3 | 16 | 128 | SAS HDD <br> 600 x 2 | jounal:NVMe SSD 800 x 1 <br> data:SATA HDD 8192 x 16 | 4 | 4 | * cinder-volume 50,000 GiB <br> * cinder-backup 50,000 GiB <br> * ephemeral disk 5,000 GiB <br> * image 5,000 GiB <br> * gnocchi metrics 1,000 GiB <br> TOTAL:111,000 GiB <br> <br> 8TB HDDの実効→約 7,200 GiB x 16 = 115,200 GiB <br> - NVMeのbest practiceはHDD 12-18本に対して、1本の比率 |
+以上、合計で 14,000 GiB となります。
 
-### システム構成情報（検証環境)
+#### 本番環境におけるComputeノードに必要となるCPUとメモリのサイジング方法
+HCI構成ではOpenStack NovaとCeph OSDがComputeノードに同居します。そのため、各ゲストVMに割り当てるリソースと、Ceph OSDに割り当てるリソースとの両方を加算して見積もることが必要です。
 
-#### Red Hat OpenStack
+##### CPU
+前述のサイジング想定より、100ゲストVMに割り当てるために必要となるCPUコア数は、  
+100 VM \* 1 core \* 50% \* = 50 コア  
+と計算できます。  
+Ceph OSDが必要とする物理CPUコア数は、Computeノードあたり 8 osd 存在するとすれば、3 Computeノードで合計 24 osd となるため、  
+2 cores \* 24 osds = 48 コア  
+と計算できます。  
 
-| サーバ役割 | 台数 | x86_64 CPU コア数 | メモリ搭載量(GB) | システムHDD (GB) | 追加HDD (GB) | 1G NIC (ポート数) | 10G NIC(ポート数) | 備考 |
-|:----------:|:----:|:-----------------:|:----------------:|:----------------:|:------------:|:-----------------:|:-----------------:|:-----------------|
-| 仮想ホスト | 1 | 8 | 128 | SAS HDD <br> 600 x 2 | SAS/SATA HDD <br> 1024 x 2 | 5 | 0 | Director は、KVMゲストVMとして構築 . <br> 余剰なリソースは、監視サーバ等で利用可能 |
-| Controller | 3 | 4 | 32 | SAS HDD <br> 600 x 2 | N/A | 6 | 6 |  |
-| Compute | 2 | 4 | 32 | SAS HDD <br>  600 x 2 | N/A | 4 | 6 | より大規模な環境とする場合、CPUコア数、メモリ搭載量を増加させる。  |
+以上より、3 Computeノード全体で、50 + 48 = 98 コア必要となるため、 1 Compute ノードあたり 36 コア用意します。
 
-#### Red Hat ceph storage
+##### メモリ
+メモリをサイジングする際は、ゲストVMに割り当てるメモリの他に、ハイパーバイザーであるKVMが消費するオーバーヘッドを考慮する必要があります。  
+1ゲストVMあたり0.5GBのオーバーヘッドがあると想定すると、100ゲストVMに割り当てるに必要となるメモリは、  
+100 VM \* ( 4 GB + 0.5 GB ) = 450 GB  
+と計算できます。  
+Ceph OSD のメモリは、ノードあたり 16 GB をベースとして 1 osd あたり 3 GB を割り当てます。したがって、  
+( 16 GB \* 3 nodes ) + ( 3 GB \* 24 osds )= 120 GB  
+と計算できます。  
 
-| サーバ役割 | 台数 | x86_64 CPU コア数 | メモリ搭載量(GB) | システムHDD (GB) | 追加HDD (GB) | 1G NIC (ポート数) | 10G NIC(ポート数) | 備考 |
-|:----------:|:----:|:-----------------:|:----------------:|:----------------:|:------------:|:-----------------:|:-----------------:|:-----------------|
-| ceph-Storage | 3 | 8 | 64 | SAS HDD <br> 600 x 2 | jounal:SSD 400 x 2 <br> data:SATA HDD 8192 x 8 | 4 | 4 | * cinder-volume 20,000 GiB <br> * cinder-backup 20,000 GiB <br> * ephemeral disk 5,000 GiB <br> * image 5,000 GiB <br> * gnocchi metrics 1,000 GiB <br> TOTAL:51,000 GiB <br><br> 8TB HDDの実効→約 7,200 GiB x 8 = 57,600 GiB <br> - SSDのbest practiceはHDD 4-6本に対して、1本の比率 |
+以上より 3 Computeノード全体で、450 + 120 = 570 GB 必要となるため、1 Compute ノードあたり 192 GB 用意します。
+
+##### overcommit ratio の設定
+以上の見積もりより、CPUとメモリのovercommit ratioは以下のような設定になります。
+
+* CPU overcommit ratio ( cpu_allocation_ratio ) : 1.1  
+  * 36 cores - 16 cores(Ceph OSD用) = 20 cores ... ゲストVM用に割り当てられるコア数  
+  * 20 cores / 50%(平均CPU使用率) = 40 cores ... ゲストVMがCPU100%稼働した場合に必要なコア数  
+  * 40 cores / 36 cores = 1.1 ... CPU overcommit ratio
+* メモリovercommit ratio ( ram_allocation_ratio ) : 1.0
+  * メモリはovercommitしていないため
 
 
 ### ceph Storage ディスクレイアウト設計
